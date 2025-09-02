@@ -6,7 +6,10 @@ using OpenTelemetry.Trace;
 using Serilog;
 using Backend.API.Features.Users.GetUsers;
 using Backend.API.Features.Users.Models;
-using Backend.API.Infrastructure.Data;
+using Backend.API.Features.Users.Store;
+using Backend.API.Features.DataScraping.ShopeeFood.Store;
+using Backend.API.Features.DataScraping.ShopeeFood.GetDeliveryDishes;
+using Backend.API.Swagger;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,20 +23,22 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.OperationFilter<FileUploadOperationFilter>();
+});
 builder.Services.AddHealthChecks();
-
 builder.Services.AddAutoMapper(typeof(UserProfile));
-
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssemblyContaining<GetUsersHandler>());
-
+    {
+        cfg.RegisterServicesFromAssemblyContaining<GetUsersHandler>();
+        cfg.RegisterServicesFromAssemblyContaining<GetDeliveryDishesHandler>();
+    });
 builder.Services.AddScoped<IValidator<UserFilter>, UserFilterValidator>();
-builder.Services.AddSingleton<IUserStore, FakeUserSeeder>();
+builder.Services.AddSingleton<IUserMongoStore, UserMongoStore>();
+builder.Services.AddSingleton<IDeliveryDishesMongoStore, DeliveryDishesMongoStore>();
 
 builder.Services.AddOpenTelemetry()
   .ConfigureResource(r => r.AddService("UserApi"))
@@ -46,24 +51,16 @@ builder.Services.AddOpenTelemetry()
       .AddRuntimeInstrumentation()
       .AddOtlpExporter(o => { o.Endpoint = new Uri("http://otel-collector:4317"); }));
 
-
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Always enable Swagger for easier debugging
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapHealthChecks("/health");
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

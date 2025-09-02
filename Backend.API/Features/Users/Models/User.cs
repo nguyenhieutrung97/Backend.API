@@ -1,8 +1,13 @@
-﻿namespace Backend.API.Features.Users.Models
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace Backend.API.Features.Users.Models
 {
 
     public sealed record class User
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.String)]
         public Guid Id { get; init; }
         public string FirstName { get; init; } = default!;
         public string LastName { get; init; } = default!;

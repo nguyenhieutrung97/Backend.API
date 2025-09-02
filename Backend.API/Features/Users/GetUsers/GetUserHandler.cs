@@ -1,53 +1,71 @@
 ﻿using AutoMapper;
 using Backend.API.Features.Users.Models;
-using Backend.API.Infrastructure.Data;
+using Backend.API.Features.Users.Store;
 using MediatR;
 
 namespace Backend.API.Features.Users.GetUsers
 {
-    public sealed class GetUsersHandler : IRequestHandler<GetUsersQuery, Paged<UserDto>>
+    public sealed class GetUsersHandler : IRequestHandler<GetUsersQuery, Paged<User>>
     {
-        private readonly IUserStore _store;
+        private readonly IUserMongoStore _store;
         private readonly IMapper _mapper;
 
-        public GetUsersHandler(IUserStore store, IMapper mapper)
+        public GetUsersHandler(IUserMongoStore store, IMapper mapper)
         {
             _store = store;
             _mapper = mapper;
         }
 
-        public Task<Paged<UserDto>> Handle(GetUsersQuery request, CancellationToken ct)
+        public async Task<Paged<User>> Handle(GetUsersQuery request, CancellationToken ct)
         {
-            var f = request.Filter;
+            UserFilter filter = request.Filter;
 
-            var q = _store.Users.AsQueryable();
+            IReadOnlyList<User> allUsers = await _store.GetAllAsync(ct);
+            IEnumerable<User> query = allUsers;
 
-            if (!string.IsNullOrWhiteSpace(f.Search))
+            if (!string.IsNullOrWhiteSpace(filter.Search))
             {
-                var s = f.Search.Trim().ToLowerInvariant();
-                q = q.Where(u =>
-                    (u.FirstName + " " + u.LastName).ToLower().Contains(s) ||
-                    u.Email.ToLower().Contains(s));
+                string s = filter.Search.Trim();
+                query = query.Where(u =>
+                    $"{u.FirstName} {u.LastName}".Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(s, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!string.IsNullOrWhiteSpace(f.Country))
-                q = q.Where(u => u.Country.Equals(f.Country, StringComparison.OrdinalIgnoreCase));
-
-            q = (f.Sort, f.Order) switch
+            if (!string.IsNullOrWhiteSpace(filter.Country))
             {
-                ("age", "desc") => q.OrderByDescending(u => u.BirthDate),
-                ("age", _) => q.OrderBy(u => u.BirthDate),
-                ("country", "desc") => q.OrderByDescending(u => u.Country),
-                ("country", _) => q.OrderBy(u => u.Country),
-                ("name", "desc") => q.OrderByDescending(u => u.LastName).ThenByDescending(u => u.FirstName),
-                _ => q.OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+                query = query.Where(u => string.Equals(u.Country, filter.Country, StringComparison.OrdinalIgnoreCase));
+            }
+
+            string sort = filter.Sort?.ToLowerInvariant() ?? "name";
+            string order = filter.Order?.ToLowerInvariant() ?? "asc";
+
+            query = (sort, order) switch
+            {
+                // Age asc: younger first => later BirthDate first (descending)
+                ("age", "asc")      => query.OrderByDescending(u => u.BirthDate)
+                                             .ThenBy(u => u.LastName).ThenBy(u => u.FirstName).ThenBy(u => u.Id),
+                // Age desc: older first => earlier BirthDate first (ascending)
+                ("age", _)          => query.OrderBy(u => u.BirthDate)
+                                             .ThenBy(u => u.LastName).ThenBy(u => u.FirstName).ThenBy(u => u.Id),
+
+                ("country", "desc") => query.OrderByDescending(u => u.Country)
+                                             .ThenBy(u => u.LastName).ThenBy(u => u.FirstName).ThenBy(u => u.Id),
+                ("country", _)      => query.OrderBy(u => u.Country)
+                                             .ThenBy(u => u.LastName).ThenBy(u => u.FirstName).ThenBy(u => u.Id),
+
+                ("name", "desc")    => query.OrderByDescending(u => u.LastName)
+                                             .ThenByDescending(u => u.FirstName).ThenBy(u => u.Id),
+                _                   => query.OrderBy(u => u.LastName)
+                                             .ThenBy(u => u.FirstName).ThenBy(u => u.Id)
             };
 
-            var total = q.Count();
-            var items = q.Skip((f.Page - 1) * f.PageSize).Take(f.PageSize).ToList();
+            int total = query.Count();
+            List<User> items = query.Skip((filter.Page - 1) * filter.PageSize)
+                                    .Take(filter.PageSize)
+                                    .ToList();
 
-            var dto = _mapper.Map<List<UserDto>>(items);
-            return Task.FromResult(new Paged<UserDto>(dto, f.Page, f.PageSize, total));
+            List<User> dto = _mapper.Map<List<User>>(items);
+            return new Paged<User>(dto, filter.Page, filter.PageSize, total);
         }
     }
 }
