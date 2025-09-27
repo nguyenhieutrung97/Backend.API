@@ -1,6 +1,6 @@
 using Backend.API.Features.Users.GetUsers;
 using Backend.API.Features.Users.Models;
-using FluentValidation;
+using Backend.API.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,25 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 public class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IValidator<UserFilter> _validator;
 
-    public UsersController(IMediator mediator, IValidator<UserFilter> validator)
-    {
-        _mediator = mediator;
-        _validator = validator;
-    }
+    public UsersController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    public async Task<IActionResult> GetUsers([FromQuery] UserFilter filter)
-    {
-        var result = await _validator.ValidateAsync(filter);
-        if (!result.IsValid)
-        {
-            var details = new ValidationProblemDetails(result.ToDictionary());
-            return ValidationProblem(details);
-        }
-
-        var paged = await _mediator.Send(new GetUsersQuery(filter));
-        return Ok(paged);
-    }
+    [ProducesResponseType(typeof(Paged<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetUsers([FromQuery] UserFilter filter, CancellationToken ct)
+        => Ok(await _mediator.Send(new GetUsersQuery(filter), ct));
 }

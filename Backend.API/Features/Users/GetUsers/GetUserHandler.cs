@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.API.Features.Users.Models;
+using Backend.API.Common;
 using Backend.API.Infrastructure.Data;
 using MediatR;
 
@@ -24,10 +25,10 @@ namespace Backend.API.Features.Users.GetUsers
 
             if (!string.IsNullOrWhiteSpace(f.Search))
             {
-                var s = f.Search.Trim().ToLowerInvariant();
+                var s = f.Search.Trim();
                 q = q.Where(u =>
-                    (u.FirstName + " " + u.LastName).ToLower().Contains(s) ||
-                    u.Email.ToLower().Contains(s));
+                    (u.FirstName + " " + u.LastName).Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                    u.Email.Contains(s, StringComparison.OrdinalIgnoreCase));
             }
 
             if (!string.IsNullOrWhiteSpace(f.Country))
@@ -35,8 +36,9 @@ namespace Backend.API.Features.Users.GetUsers
 
             q = (f.Sort, f.Order) switch
             {
-                ("age", "desc") => q.OrderByDescending(u => u.BirthDate),
-                ("age", _) => q.OrderBy(u => u.BirthDate),
+                // Age: oldest first when desc (earliest birthdate), youngest first when asc
+                ("age", "desc") => q.OrderBy(u => u.BirthDate),
+                ("age", _) => q.OrderByDescending(u => u.BirthDate),
                 ("country", "desc") => q.OrderByDescending(u => u.Country),
                 ("country", _) => q.OrderBy(u => u.Country),
                 ("name", "desc") => q.OrderByDescending(u => u.LastName).ThenByDescending(u => u.FirstName),
