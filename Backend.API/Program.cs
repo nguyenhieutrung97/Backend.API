@@ -38,7 +38,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins("https://trungtero.com")
+            .WithOrigins("https://trungtero.com", "https://api.trungtero.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -113,31 +113,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 
-// Only use HTTPS redirection in development
-// In production, Nginx handles SSL termination
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
-
-// Security headers for production
-if (app.Environment.IsProduction())
-{
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-        context.Response.Headers["X-Frame-Options"] = "DENY";
-        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
-        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-        context.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
-        
-        // Strict CSP for production
-        context.Response.Headers["Content-Security-Policy"] = 
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://trungtero.com https://api.trungtero.com;";
-        
-        await next();
-    });
-}
+app.UseHttpsRedirection();
 
 // Enable CORS
 app.UseCors();
