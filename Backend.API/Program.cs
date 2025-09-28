@@ -142,7 +142,7 @@ if (app.Environment.IsProduction())
         
         // Strict CSP for production
         context.Response.Headers.Add("Content-Security-Policy", 
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://trungtero.com;");
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://trungtero.com https://api.trungtero.com;");
         
         await next();
     });
