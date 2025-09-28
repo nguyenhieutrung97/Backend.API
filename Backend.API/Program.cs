@@ -153,7 +153,7 @@ app.UseCors("AllowSpecificOrigins");
 
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireCors("AllowSpecificOrigins");
 
 // Root endpoint convenience
 app.MapGet("/", () => Results.Redirect("/swagger"));
