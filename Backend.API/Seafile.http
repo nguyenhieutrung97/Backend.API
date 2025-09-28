@@ -1,0 +1,90 @@
+### Get all Seafile tracks
+GET https://localhost:7000/api/seafile
+Accept: application/json
+
+### Get Seafile tracks with pagination
+GET https://localhost:7000/api/seafile?page=1&pageSize=5
+Accept: application/json
+
+### Get Seafile tracks with title filter
+GET https://localhost:7000/api/seafile?title=80s
+Accept: application/json
+
+### Get Seafile tracks with folder filter
+GET https://localhost:7000/api/seafile?folder=Music
+Accept: application/json
+
+### Get Seafile tracks with multiple filters
+GET https://localhost:7000/api/seafile?folder=Music&title=80s
+Accept: application/json
+
+### Get all unique folders
+GET https://localhost:7000/api/seafile/folders
+Accept: application/json
+
+### Get Seafile track by ID
+GET https://localhost:7000/api/seafile/{{trackId}}
+Accept: application/json
+
+### Create a new Seafile track
+POST https://localhost:7000/api/seafile
+Content-Type: application/json
+
+{
+  "title": "(80s Remix) Making My Way - Sơn Tùng M-TP",
+  "src": "https://seafile.trungtero.com/seafhttp/f/b188ccde65f844de8755/?op=view",
+  "folder": "Music"
+}
+
+### Create another Seafile track
+POST https://localhost:7000/api/seafile
+Content-Type: application/json
+
+{
+  "title": "(Synthwave Disco 80s) Em Đừng Đi - Sơn Tùng M-TP",
+  "src": "https://seafile.trungtero.com/seafhttp/f/a9b30b96f0da4d7fbfa6/?op=view",
+  "folder": "Music"
+}
+
+### Create third Seafile track
+POST https://localhost:7000/api/seafile
+Content-Type: application/json
+
+{
+  "title": "(Synthwave Disco 80s) Cơn Mưa Ngang Qua - Sơn Tùng M-TP",
+  "src": "https://seafile.trungtero.com/seafhttp/f/7497a19cb0034eaf8da0/?op=view",
+  "folder": "Music"
+}
+
+### Create a track in a different folder
+POST https://localhost:7000/api/seafile
+Content-Type: application/json
+
+{
+  "title": "Document Example",
+  "src": "https://seafile.trungtero.com/seafhttp/f/document123/?op=view",
+  "folder": "Documents"
+}
+
+### Update Seafile track
+PUT https://localhost:7000/api/seafile/{{trackId}}
+Content-Type: application/json
+
+{
+  "title": "Updated Title - Sơn Tùng M-TP",
+  "src": "https://seafile.trungtero.com/seafhttp/f/updated-url/?op=view",
+  "folder": "Updated Music"
+}
+
+### Delete Seafile track
+DELETE https://localhost:7000/api/seafile/{{trackId}}
+
+### Test CORS from trungtero.com
+GET https://localhost:7000/api/seafile
+Origin: https://trungtero.com
+Accept: application/json
+
+### Test CORS from localhost:3000
+GET https://localhost:7000/api/seafile
+Origin: http://localhost:3000
+Accept: application/json
