@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend-api:
+    build: .
+    container_name: backend-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDB=mongodb://root:Nuc2025@trungtero.com:27017
+      - MongoDB__DatabaseName=BackendAPI
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
