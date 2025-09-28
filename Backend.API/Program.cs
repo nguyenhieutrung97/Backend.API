@@ -33,14 +33,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 
 // CORS configuration (read from configuration)
+// CORS configuration
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("Frontend", policy =>
     {
         policy
-            .WithOrigins("https://trungtero.com", "https://api.trungtero.com")
+            .WithOrigins(
+                "https://trungtero.com",
+                "https://www.trungtero.com"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
+            // Chỉ bật nếu *thật sự* dùng cookie/authorization qua trình duyệt
             .AllowCredentials();
     });
 });
@@ -101,13 +106,13 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-// Enable CORS
-app.UseCors();
+// CORS phải nằm sớm để “bọc” mọi response (kể cả lỗi)
+app.UseCors("Frontend");
 
-// Global exception / problem details handling
+// Global exception
 app.UseGlobalExceptionHandling();
 
-// Configure the HTTP request pipeline.
+// Swagger chỉ Dev
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -116,14 +121,18 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 
-//app.UseHttpsRedirection();
-
+// Không redirect HTTPS trong prod (nginx terminate TLS)
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 
-app.MapControllers();
+// Áp policy cho toàn bộ controller endpoints
+app.MapControllers().RequireCors("Frontend");
 
-// Root endpoint convenience
+// Root
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();
