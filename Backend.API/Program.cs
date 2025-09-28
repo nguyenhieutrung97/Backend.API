@@ -38,7 +38,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins("https://api.trungtero.com")
+            .WithOrigins("https://trungtero.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -140,11 +140,11 @@ if (app.Environment.IsProduction())
 }
 
 // Enable CORS
-app.UseCors("AllowSpecificOrigins");
+app.UseCors();
 
 app.UseAuthorization();
 
-app.MapControllers().RequireCors("AllowSpecificOrigins");
+app.MapControllers();
 
 // Root endpoint convenience
 app.MapGet("/", () => Results.Redirect("/swagger"));
