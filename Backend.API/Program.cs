@@ -140,7 +140,12 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in development
+// In production, Nginx handles SSL termination
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Security headers for production
 if (app.Environment.IsProduction())
