@@ -24,6 +24,18 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .WithOrigins("https://trungtero.com")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -31,24 +43,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
-
-// CORS configuration (read from configuration)
-// CORS configuration
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy
-            .WithOrigins(
-                "https://trungtero.com",
-                "https://www.trungtero.com"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            // Chỉ bật nếu *thật sự* dùng cookie/authorization qua trình duyệt
-            .AllowCredentials();
-    });
-});
 
 builder.Services.AddAutoMapper(typeof(UserProfile), typeof(SeafileProfile));
 
@@ -107,7 +101,7 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 
 // CORS phải nằm sớm để “bọc” mọi response (kể cả lỗi)
-app.UseCors("Frontend");
+app.UseCors();
 
 // Global exception
 app.UseGlobalExceptionHandling();
@@ -121,13 +115,8 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 
-// Không redirect HTTPS trong prod (nginx terminate TLS)
-if (!app.Environment.IsProduction())
-{
-    app.UseHttpsRedirection();
-}
 
-app.UseAuthorization();
+//app.UseAuthorization();
 
 // Áp policy cho toàn bộ controller endpoints
 app.MapControllers().RequireCors("Frontend");
