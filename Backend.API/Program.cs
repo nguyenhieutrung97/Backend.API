@@ -101,6 +101,9 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
+// Enable CORS
+app.UseCors();
+
 // Global exception / problem details handling
 app.UseGlobalExceptionHandling();
 
@@ -115,8 +118,6 @@ app.MapHealthChecks("/health");
 
 app.UseHttpsRedirection();
 
-// Enable CORS
-app.UseCors();
 
 app.UseAuthorization();
 
