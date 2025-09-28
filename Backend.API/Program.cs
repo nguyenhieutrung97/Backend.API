@@ -32,31 +32,44 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 
-// CORS configuration
+// CORS configuration (read from configuration)
 builder.Services.AddCors(options =>
 {
-    if (builder.Environment.IsProduction())
+    var corsSection = builder.Configuration.GetSection("Cors");
+    var configOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+    var configMethods = corsSection.GetSection("AllowedMethods").Get<string[]>() ?? new[] { "GET", "POST", "PUT", "DELETE", "OPTIONS" };
+    var configHeaders = corsSection.GetSection("AllowedHeaders").Get<string[]>() ?? new[] { "Content-Type", "Authorization", "X-Requested-With" };
+    var allowCredentials = corsSection.GetValue<bool?>("AllowCredentials") ?? true;
+
+    // In Development, include localhost defaults in addition to configured origins
+    var effectiveOrigins = builder.Environment.IsDevelopment()
+        ? configOrigins.Union(new[] { "http://localhost:3000", "http://localhost:3001" }).ToArray()
+        : configOrigins;
+
+    options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        // Production: Only allow trungtero.com
-        options.AddPolicy("AllowSpecificOrigins", policy =>
+        if (effectiveOrigins.Length > 0)
         {
-            policy.WithOrigins("https://trungtero.com")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        });
-    }
-    else
-    {
-        // Development: Allow localhost and trungtero.com
-        options.AddPolicy("AllowSpecificOrigins", policy =>
+            policy.WithOrigins(effectiveOrigins);
+        }
+        else
         {
-            policy.WithOrigins("https://trungtero.com", "http://localhost:3000", "http://localhost:3001")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        });
-    }
+            // Fallback to a safe default (no wildcard) if not configured
+            policy.WithOrigins("https://trungtero.com");
+        }
+
+        policy.WithMethods(configMethods)
+              .WithHeaders(configHeaders);
+
+        if (allowCredentials)
+        {
+            policy.AllowCredentials();
+        }
+        else
+        {
+            policy.DisallowCredentials();
+        }
+    });
 });
 
 builder.Services.AddAutoMapper(typeof(UserProfile), typeof(SeafileProfile));
