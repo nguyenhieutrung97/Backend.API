@@ -35,40 +35,13 @@ builder.Services.AddHealthChecks();
 // CORS configuration (read from configuration)
 builder.Services.AddCors(options =>
 {
-    var corsSection = builder.Configuration.GetSection("Cors");
-    var configOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-    var configMethods = corsSection.GetSection("AllowedMethods").Get<string[]>() ?? new[] { "GET", "POST", "PUT", "DELETE", "OPTIONS" };
-    var configHeaders = corsSection.GetSection("AllowedHeaders").Get<string[]>() ?? new[] { "Content-Type", "Authorization", "X-Requested-With" };
-    var allowCredentials = corsSection.GetValue<bool?>("AllowCredentials") ?? true;
-
-    // In Development, include localhost defaults in addition to configured origins
-    var effectiveOrigins = builder.Environment.IsDevelopment()
-        ? configOrigins.Union(new[] { "http://localhost:3000", "http://localhost:3001" }).ToArray()
-        : configOrigins;
-
-    options.AddPolicy("AllowSpecificOrigins", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        if (effectiveOrigins.Length > 0)
-        {
-            policy.WithOrigins(effectiveOrigins);
-        }
-        else
-        {
-            // Fallback to a safe default (no wildcard) if not configured
-            policy.WithOrigins("https://trungtero.com");
-        }
-
-        policy.WithMethods(configMethods)
-              .WithHeaders(configHeaders);
-
-        if (allowCredentials)
-        {
-            policy.AllowCredentials();
-        }
-        else
-        {
-            policy.DisallowCredentials();
-        }
+        policy
+            .WithOrigins("https://api.trungtero.com")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
